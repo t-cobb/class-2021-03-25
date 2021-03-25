@@ -1,0 +1,26 @@
+---
+title: "Understanding Moves Toward Immigration Populism"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(primer.data)
+library(rstanarm)
+
+# Consider someone whose att_end at the end of the experiment is 1 or more units
+# greater than their att_start. They become more conservative on immigration
+# issues. Consider such people to have made a meaningful move toward immigration
+# populism. Let's use `move_to_pop` as a new variable, defined as TRUE for such
+# people. We are interested to see if two variables might be associated with
+# move_to_pop: treatment and age.
+
+x <- trains %>% 
+  mutate(move_to_pop = ifelse(att_end >= att_start + 1, TRUE, FALSE)) %>% 
+  select(move_to_pop, treatment, age)
+```
+
+
+
+
