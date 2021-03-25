@@ -22,5 +22,98 @@ x <- trains %>%
 ```
 
 
+What is the causal effect of the treatment on the probability of becoming more populist? 
+-Wisdom bullets 
+The first question is, what population do we care about? 
+
+What population are we imagining, and what population are we using to try and answer this question about? (MA, train station, 2012)
+Is the sample over or under represented? 
+Station is in MA which is a liberal state
+
+-Fit a model to answer this question
+We have three parameters: treatment, control, and error (outside of the model)
+
+
+```{r fit}
+
+# the thing we get asked about / "whats going to happen about this? is on the left side of formula (in this case, move_to_pop) // 
+
+fit_1 <- stan_glm(data = x,
+                  formula = move_to_pop ~ treatment,
+                  family = binomial,
+                  refresh = 0,
+                  seed = 65)
+```
+
+
+```{r pe}
+
+# if someone is asking me a question about one individual or a small group, im using posterior_predict. Anything else, posterior_epred
+
+newobs <- tibble(treatment = c("Treated", "Control"))
+
+pe <- posterior_epred(fit_1, 
+                      newdata = newobs) %>% 
+  as_tibble() %>%
+  mutate(ate = `1` - `2`)
+
+# we use mutate(ate) to figure out the difference between the treatment and control
+
+
+```
+
+```{r plot}
+
+# from section 8.4 liberal ~ income section of the book 
+
+# the number we wish we had: what number of people became more populist when exposed to the treatment? We don't have this number, so we create a posterior. 
+# column 1 in our pe represents 4,000 draws from our posterior distribution (section 2.9 in the book)
+
+pe %>% 
+  ggplot(aes(x = ate)) +
+    geom_histogram(aes(y = after_stat(count/sum(count))),
+                   bins = 100)  +
+    labs(title = "Posterior for causal effect of treatment",
+         subtitle = "Treatment makes it about 20% likely",
+         x = "Difference in attitude",
+         y = "Probability") +
+    scale_x_continuous(labels = scales::number_format()) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    theme_classic()
+
+```
+
+```{r}
+
+# If we assign the treatment to 25 people, how many will become populist? 
+
+# we want to repeat treatment 25 times
+
+newobs <- tibble(treatment = c(rep("Treated", 25)))
+
+pp <- posterior_predict(fit_1,
+                  newdata = newobs) %>%
+  as_tibble() %>%
+  mutate_all(as.numeric) %>%
+  rowwise() %>%
+  mutate(total = sum(c_across())) 
+
+  
+pp %>%
+  ggplot(aes(x = total)) +
+  geom_histogram(aes(y = after_stat(count/sum(count))),
+                 bins = 100) +
+  labs(title = "Posterior for Number of People who Became More Populist",
+       subtitle = "Ten is the most likely number, but values from 4 to 15 are plausible",
+       x = "Number",
+       y = "Probability") +
+  scale_x_continuous(labels = scales::number_format(1)) +
+  scale_y_continuous(labels = scales::percent_format(1)) +
+  theme_classic()
+
+
+
+
+```
 
 
